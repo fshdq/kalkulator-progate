@@ -1,173 +1,78 @@
-const calculator = {
-   displayNumber: '0',
-   operator: null,
-   firstNumber: null,
-   waitingForSecondNumber: false
-};
- 
-function updateDisplay() {
-   document.querySelector("#displayNumber").innerText = calculator.displayNumber;
+function getHistory(){
+	return document.getElementById("history-value").innerText;
 }
- 
-function clearCalculator() {
-   calculator.displayNumber = '0';
-   calculator.operator = null;
-   calculator.firstNumber = null;
-   calculator.waitingForSecondNumber = false;
+function printHistory(num){
+	document.getElementById("history-value").innerText=num;
 }
- 
-function inputDigit(digit) {
-   if (calculator.waitingForSecondNumber && calculator.firstNumber === calculator.displayNumber) {
-       calculator.displayNumber = digit;
-   } else {
-       if (calculator.displayNumber === '0') {
-           calculator.displayNumber = digit;
-       } else {
-           calculator.displayNumber += digit;
-       }
-   }
+function getOutput(){
+	return document.getElementById("output-value").innerText;
 }
- 
-function inverseNumber() {
-   if (calculator.displayNumber === '0') {
-       return;
-   }
-   calculator.displayNumber = calculator.displayNumber * -1;
+function printOutput(num){
+	if(num==""){
+		document.getElementById("output-value").innerText=num;
+	}
+	else{
+		document.getElementById("output-value").innerText=getFormattedNumber(num);
+	}	
 }
- 
-function handleOperator(operator) {
-   if (!calculator.waitingForSecondNumber) {
-       calculator.operator = operator;
-       calculator.waitingForSecondNumber = true;
-       calculator.firstNumber = calculator.displayNumber;
-   } else {
-       alert('Operator sudah ditetapkan')
-   }
+function getFormattedNumber(num){
+	if(num=="-"){
+		return "";
+	}
+	var n = Number(num);
+	var value = n.toLocaleString("en");
+	return value;
 }
- 
-function performCalculation() {
-   if (calculator.firstNumber == null || calculator.operator == null) {
-       alert("Anda belum menetapkan operator");
-       return;
-   }
- 
-   let result = 0;
-   if (calculator.operator === "+") {
-       result = parseInt(calculator.firstNumber) + parseInt(calculator.displayNumber);
-   } else {
-       result = parseInt(calculator.firstNumber) - parseInt(calculator.displayNumber)
-   }
- 
-   calculator.displayNumber = result;
+function reverseNumberFormat(num){
+	return Number(num.replace(/,/g,''));
 }
- 
- 
-const buttons = document.querySelectorAll(".button");
-for (let button of buttons) {
-   button.addEventListener('click', function(event) {
- 
-       // mendapatkan objek elemen yang diklik
-       const target = event.target;
- 
-       if (target.classList.contains('clear')) {
-           clearCalculator();
-           updateDisplay();
-           return;
-       }
- 
-       if (target.classList.contains('negative')) {
-           inverseNumber();
-           updateDisplay();
-           return;
-       }
- 
-       if (target.classList.contains('equals')) {
-           performCalculation();
-           updateDisplay();
-           return;
-       }
- 
-       if (target.classList.contains('operator')) {
-           handleOperator(target.innerText)
-           updateDisplay();
-           return;
-       }
- 
-       inputDigit(target.innerText);
-       updateDisplay()
-   });
+var operator = document.getElementsByName("operator");
+for(var i =0;i<operator.length;i++){
+	operator[i].addEventListener('click',function(){
+		if(this.id=="clear"){
+			printHistory("");
+			printOutput("");
+		}
+		else if(this.id=="backspace"){
+			var output=reverseNumberFormat(getOutput()).toString();
+			if(output){//if output has a value
+				output= output.substr(0,output.length-1);
+				printOutput(output);
+			}
+		}
+		else{
+			var output=getOutput();
+			var history=getHistory();
+			if(output==""&&history!=""){
+				if(isNaN(history[history.length-1])){
+					history= history.substr(0,history.length-1);
+				}
+			}
+			if(output!="" || history!=""){
+				output= output==""?output:reverseNumberFormat(output);
+				history=history+output;
+				if(this.id=="="){
+					var result=eval(history);
+					printOutput(result);
+					printHistory("");
+				}
+				else{
+					history=history+this.id;
+					printHistory(history);
+					printOutput("");
+				}
+			}
+		}
+		
+	});
 }
-function performCalculation() {
-   if (calculator.firstNumber == null || calculator.operator == null) {
-       alert("Anda belum menetapkan operator");
-       return;
-   }
- 
-   let result = 0;
-   if (calculator.operator === "+") {
-       result = parseInt(calculator.firstNumber) + parseInt(calculator.displayNumber);
-   } else {
-       result = parseInt(calculator.firstNumber) - parseInt(calculator.displayNumber)
-   }
-   const history = {
-       firstNumber: calculator.firstNumber,
-       secondNumber: calculator.displayNumber,
-       operator: calculator.operator,
-       result: result
-   }
-   putHistory(history);
-   calculator.displayNumber = result;
-   renderHistory();
+var number = document.getElementsByName("number");
+for(var i =0;i<number.length;i++){
+	number[i].addEventListener('click',function(){
+		var output=reverseNumberFormat(getOutput());
+		if(output!=NaN){ //if output is a number
+			output=output+this.id;
+			printOutput(output);
+		}
+	});
 }
-
-// STORAGE
-const CACHE_KEY = "calculation_history";
- 
-function checkForStorage() {
-   return typeof(Storage) !== "undefined";
-}
- 
-function putHistory(data) {
-   if (checkForStorage()) {
-       let historyData = null;
-       if (localStorage.getItem(CACHE_KEY) === null) {
-           historyData = [];
-       } else {
-           historyData = JSON.parse(localStorage.getItem(CACHE_KEY));
-       }
- 
-       historyData.unshift(data);
- 
-       if (historyData.length > 5) {
-           historyData.pop();
-       }
- 
-       localStorage.setItem(CACHE_KEY, JSON.stringify(historyData));
-   }
-}
- 
-function showHistory() {
-   if (checkForStorage) {
-       return JSON.parse(localStorage.getItem(CACHE_KEY)) || [];
-   } else {
-       return [];
-   }
-}
- 
-function renderHistory() {
-   const historyData = showHistory();
-   let historyList = document.querySelector("#historyList");
-   historyList.innerHTML = "";
- 
-   for (let history of historyData) {
-       let row = document.createElement('tr');
-       row.innerHTML = "<td>" + history.firstNumber + "</td>";
-       row.innerHTML += "<td>" + history.operator + "</td>";
-       row.innerHTML += "<td>" + history.secondNumber + "</td>";
-       row.innerHTML += "<td>" + history.result + "</td>";
- 
-       historyList.appendChild(row);
-   }
-}
- 
-renderHistory();
